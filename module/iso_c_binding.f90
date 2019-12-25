@@ -8,7 +8,17 @@
 
 ! See Fortran 2018, clause 18.2
 
+module __iso_c_binding_builtins
+  !These naming shenanigans prevent names from Fortran intrinsic modules
+  !from being usable on INTRINSIC statements and force the program
+  !to include the ISO_C_BINDING intrinsic module in order to access
+  !the standard name.
+  intrinsic :: __builtin_c_f_pointer
+end module
+
 module iso_c_binding
+
+  use __iso_c_binding_builtins, only: c_f_pointer => __builtin_c_f_pointer
 
   type :: c_ptr
     integer(kind=8) :: address
@@ -91,14 +101,6 @@ module iso_c_binding
       c_associated = .true.
     end if
   end function c_associated
-
-  subroutine c_f_pointer(cptr, fptr, shape)
-    type(c_ptr), intent(in) :: cptr
-    type(*), pointer, dimension(..), intent(out) :: fptr
-    ! TODO: Use a larger kind for shape than default integer
-    integer, intent(in), optional :: shape(:) ! size(shape) == rank(fptr)
-    ! TODO: Define, or write in C and change this to an interface
-  end subroutine c_f_pointer
 
   function c_loc(x)
     type(c_ptr) :: c_loc

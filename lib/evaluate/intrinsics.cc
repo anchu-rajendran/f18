@@ -1519,6 +1519,7 @@ private:
   DynamicType GetSpecificType(const TypePattern &) const;
   SpecificCall HandleNull(
       ActualArguments &, FoldingContext &, const IntrinsicProcTable &) const;
+  SpecificCall HandleC_F_Pointer(ActualArguments &, FoldingContext &) const;
 
   common::IntrinsicTypeDefaultKinds defaults_;
   std::multimap<std::string, const IntrinsicInterface *> genericFuncs_;
@@ -1541,7 +1542,7 @@ bool IntrinsicProcTable::Implementation::IsIntrinsic(
     return true;
   }
   // special cases
-  return name == "null";  // TODO more
+  return name == "null" || name == "__builtin_c_f_pointer";
 }
 
 // The NULL() intrinsic is a special case.
@@ -1599,6 +1600,19 @@ SpecificCall IntrinsicProcTable::Implementation::HandleNull(
   arguments.clear();
   return SpecificCall{
       SpecificIntrinsic{"null"s,
+          characteristics::Procedure{characteristics::DummyArguments{}, attrs}},
+      std::move(arguments)};
+}
+
+// Subroutine C_F_POINTER(CPTR=,FPTR=[,SHAPE=]) from
+// intrinsic module ISO_C_BINDING (18.2.3.3)
+SpecificCall IntrinsicProcTable::Implementation::HandleC_F_Pointer(
+    ActualArguments &arguments, FoldingContext &) const {
+  characteristics::Procedure::Attrs attrs;
+  attrs.set(characteristics::Procedure::Attr::Subroutine);
+  // TODO: pmk: check the arguments
+  return SpecificCall{
+      SpecificIntrinsic{"__builtin_c_f_pointer"s,
           characteristics::Procedure{characteristics::DummyArguments{}, attrs}},
       std::move(arguments)};
 }
@@ -1689,11 +1703,16 @@ std::optional<SpecificCall> IntrinsicProcTable::Implementation::Probe(
     return std::nullopt;  // TODO
   }
 
-  // Special case: NULL()
   // All special cases handled here before the table probes below must
   // also be caught as special names in IsIntrinsic().
-  if (call.name == "null") {
-    return HandleNull(arguments, context, intrinsics);
+  if (call.isSubroutineCall) {
+    if (call.name == "__builtin_c_f_pointer") {
+      return HandleC_F_Pointer(arguments, context);
+    }
+  } else {
+    if (call.name == "null") {
+      return HandleNull(arguments, context, intrinsics);
+    }
   }
 
   // Helper to avoid emitting errors before it is sure there is no match
