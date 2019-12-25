@@ -8,17 +8,9 @@
 
 ! See Fortran 2018, clause 18.2
 
-module __iso_c_binding_builtins
-  !These naming shenanigans prevent names from Fortran intrinsic modules
-  !from being usable on INTRINSIC statements and force the program
-  !to include the ISO_C_BINDING intrinsic module in order to access
-  !the standard name.
-  intrinsic :: __builtin_c_f_pointer
-end module
-
 module iso_c_binding
 
-  use __iso_c_binding_builtins, only: c_f_pointer => __builtin_c_f_pointer
+  use __Fortran_builtins, only: c_f_pointer => __builtin_c_f_pointer
 
   type :: c_ptr
     integer(kind=8) :: address
