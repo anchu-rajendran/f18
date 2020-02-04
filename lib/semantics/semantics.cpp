@@ -13,6 +13,7 @@
 #include "check-allocate.h"
 #include "check-arithmeticif.h"
 #include "check-coarray.h"
+#include "check-data.h"
 #include "check-deallocate.h"
 #include "check-declarations.h"
 #include "check-do.h"
@@ -111,7 +112,7 @@ private:
 
 using StatementSemanticsPass1 = ExprChecker;
 using StatementSemanticsPass2 = SemanticsVisitor<AllocateChecker,
-    ArithmeticIfStmtChecker, AssignmentChecker, CoarrayChecker,
+    ArithmeticIfStmtChecker, AssignmentChecker, CoarrayChecker, DataChecker,
     DeallocateChecker, DoChecker, IfStmtChecker, IoChecker, NullifyChecker,
     OmpStructureChecker, PurityChecker, ReturnStmtChecker, StopChecker>;
 
