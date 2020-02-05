@@ -14,6 +14,7 @@
 
 namespace Fortran::parser {
 struct DataStmt;
+struct DataStmtRepeat;
 }
 
 namespace Fortran::semantics {
@@ -21,6 +22,7 @@ class DataChecker : public virtual BaseChecker {
 public:
   DataChecker(SemanticsContext &context) : context_{context} {}
   void Leave(const parser::DataStmt &);
+  void Leave(const parser::DataStmtRepeat &);
 
 private:
   SemanticsContext &context_;

@@ -13,7 +13,21 @@
 
 namespace Fortran::semantics {
 
+struct DataCheckerInfo {
+
+};
+
+class DataCheckerHelper {
+};
+
 void DataChecker::Leave(const parser::DataStmt &) {
+  std::cout<< "found a data statement\n";
+  if(false)
+      CHECK(context_.AnyFatalError());
+}
+void DataChecker::Leave(const parser::DataStmtRepeat &) {
+  std::cout<< "found a data statementrepeat\n";
+  if(false)
       CHECK(context_.AnyFatalError());
 }
 }
