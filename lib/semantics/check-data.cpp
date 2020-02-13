@@ -34,6 +34,7 @@
 #include "flang/semantics/scope.h"
 #include "flang/semantics/semantics.h"
 #include "flang/semantics/symbol.h"
+#include "flang/parser/parse-tree.h"
 #include "flang/semantics/tools.h"
 #include "flang/semantics/type.h"
 
@@ -61,6 +62,13 @@ void DataChecker::CheckDataStmtRepeatSemantics(const parser::Scalar<parser::Inte
       std::cout <<"not name\n";
     }
 }
+struct DataCheckerInfo {
+
+};
+
+class DataCheckerHelper {
+};
+
 void DataChecker::Leave(const parser::DataStmt &) {
   std::cout<< "found a data statement\n";
   if(false)
