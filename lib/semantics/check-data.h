@@ -10,11 +10,17 @@
 #define FORTRAN_SEMANTICS_CHECK_DATA_H_
 
 #include "flang/semantics/semantics.h"
+#include "flang/common/indirection.h"
+#include "flang/evaluate/expression.h"
+#include "flang/semantics/semantics.h"
+#include "flang/semantics/tools.h"
+#include <string>
 #include <iostream>
 
 namespace Fortran::parser {
 struct DataStmt;
 struct DataStmtRepeat;
+class ParseTreeDumper;
 }
 
 namespace Fortran::semantics {
@@ -23,7 +29,7 @@ public:
   DataChecker(SemanticsContext &context) : context_{context} {}
   void Leave(const parser::DataStmt &);
   void Leave(const parser::DataStmtRepeat &);
-
+  void CheckDataStmtRepeatSemantics(const parser::Scalar<parser::Integer<parser::ConstantSubobject>> &);
 private:
   SemanticsContext &context_;
 };
