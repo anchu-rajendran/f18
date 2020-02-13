@@ -23,10 +23,6 @@
 namespace Fortran::parser {
 struct DataStmt;
 struct DataStmtRepeat;
-<<<<<<< HEAD
-class ParseTreeDumper;
-=======
->>>>>>> 0d596e2b9e01b485db8f9f1017a0e909f75d4a96
 }
 
 namespace Fortran::semantics {
