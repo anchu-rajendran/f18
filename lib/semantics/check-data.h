@@ -10,14 +10,9 @@
 #define FORTRAN_SEMANTICS_CHECK_DATA_H_
 
 #include "flang/semantics/semantics.h"
-<<<<<<< HEAD
-#include "flang/common/indirection.h"
-#include "flang/evaluate/expression.h"
-#include "flang/semantics/semantics.h"
 #include "flang/semantics/tools.h"
+#include "flang/evaluate/fold.h"
 #include <string>
-=======
->>>>>>> 0d596e2b9e01b485db8f9f1017a0e909f75d4a96
 #include <iostream>
 
 namespace Fortran::parser {
@@ -28,12 +23,13 @@ struct DataStmtRepeat;
 namespace Fortran::semantics {
 class DataChecker : public virtual BaseChecker {
 public:
-  DataChecker(SemanticsContext &context) : context_{context} {}
-  void Leave(const parser::DataStmt &);
+  DataChecker(SemanticsContext &context) : context_{context}, foldingContext_{context_.foldingContext()} {}
   void Leave(const parser::DataStmtRepeat &);
-  void CheckDataStmtRepeatSemantics(const parser::Scalar<parser::Integer<parser::ConstantSubobject>> &);
+  void Leave(const parser::DataStmtConstant &);
+  void Leave(const parser::DataStmtObject &);
 private:
   SemanticsContext &context_;
+  evaluate::FoldingContext &foldingContext_;
 };
 }
 #endif  // FORTRAN_SEMANTICS_CHECK_DATA_H_
