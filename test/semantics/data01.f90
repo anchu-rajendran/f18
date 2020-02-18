@@ -10,9 +10,8 @@ subroutine s1
   use m1
   integer, parameter :: repeat=-1
   type(person) myname
-  !ERROR: Data Repeat value should be positive
+  !ERROR: The repeat count for data value should be positive
   DATA myname%x, myname%y / repeat*35 /
-  !ERROR: Data Repeat value should be positive
+  !ERROR: The repeat count for data value should be positive
   DATA myname%x, myname%y / digits(1)*35 /
 end
-
