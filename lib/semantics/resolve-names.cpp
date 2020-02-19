@@ -2900,8 +2900,7 @@ void DeclarationVisitor::Post(const parser::EntityDecl &x) {
     if (ConvertToObjectEntity(symbol)) {
       Initialization(name, *init, false);
     }
-  } else if (attrs.test(Attr::PARAMETER)) {
-    //C882, C883
+  } else if (attrs.test(Attr::PARAMETER)) { //C882, C883
     Say(name, "Missing initialization for parameter '%s'"_err_en_US);
   }
 }

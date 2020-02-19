@@ -17,10 +17,10 @@ subroutine check_repeat
   !ERROR: Missing initialization for parameter 'uninitialized'
   integer, parameter :: uninitialized
   !C882
-  !ERROR: The repeat count for data value should be positive
+  !ERROR: Repeat count for data value should not be negative
   DATA myName%age / repeat * 35 /
   !C882
-  !ERROR: The repeat count for data value should be positive
+  !ERROR: Repeat count for data value should not be negative
   DATA myName%age / digits(1) * 35 /
   !C882
   !ERROR: Must be a constant value
@@ -40,8 +40,8 @@ subroutine check_value
   use m1
   !C883
   !ERROR: Derived type 'persn' not found
-  DATA myname / persn(2, 'Anchu') /
+  DATA myname / persn(2, 'Abcd Efgh') /
   !C884
-  !ERROR: The Structure Constructor in DATA value should be a constant expression
-  DATA myname / person(myAge, 'Anchu') /
+  !ERROR: Structure constructor in DATA value should be a constant expression
+  DATA myname / person(myAge, 'Abcd Ijkl') /
 end

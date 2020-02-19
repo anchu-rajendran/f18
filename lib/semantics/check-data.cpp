@@ -1,4 +1,4 @@
-//===-- lib/semantics/check-allocate.cpp ----------------------------------===//
+//===-- lib/semantics/check-data.cpp ----------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -7,22 +7,10 @@
 //===----------------------------------------------------------------------===//
 
 #include "check-data.h"
-#include "resolve-names-utils.h"
-#include "flang/common/indirection.h"
-#include "flang/evaluate/fold.h"
-#include "flang/evaluate/tools.h"
-#include "flang/evaluate/type.h"
-#include "flang/parser/parse-tree-visitor.h"
-#include "flang/parser/parse-tree.h"
-#include "flang/parser/tools.h"
-#include "flang/semantics/expression.h"
-#include "flang/semantics/semantics.h"
-#include "flang/semantics/symbol.h"
 
 namespace Fortran::semantics {
 
 void DataChecker::Leave(const parser::DataStmtConstant &dataConst) {
-  // C884
   if (auto *structure{
           std::get_if<parser::StructureConstructor>(&dataConst.u)}) {
     for (const auto &component :
@@ -30,18 +18,16 @@ void DataChecker::Leave(const parser::DataStmtConstant &dataConst) {
       const parser::Expr &parsedExpr{
           std::get<parser::ComponentDataSource>(component.t).v.value()};
       const auto *expr{GetExpr(parsedExpr)};
-      if (!evaluate::IsConstantExpr(*expr)) {  // C884
+      if (!evaluate::IsConstantExpr(*expr)) { // C884
         context_.Say(parsedExpr.source,
-            "The Structure Constructor in DATA value should be a constant expression"_err_en_US);
+            "Structure constructor in DATA value should be a constant expression"_err_en_US);
       }
     }
   }
-  // TODO: C886  and C887 for dataConstant
+  // TODO: C886 and C887 for dataConstant
 }
 
-void DataChecker::Leave(const parser::DataStmtObject &) {
-  // C874-C881
-}
+// TODO: C874-C881
 
 void DataChecker::Leave(const parser::DataStmtRepeat &dataRepeat) {
   if (auto *repeatVal{std::get_if<
@@ -55,7 +41,7 @@ void DataChecker::Leave(const parser::DataStmtRepeat &dataRepeat) {
         if (auto i64{ToInt64(expr)}) {
           if (*i64 < 0) {  // C882
             context_.Say(designator.source,
-                "The repeat count for data value should be positive"_err_en_US);
+                "Repeat count for data value should not be negative"_err_en_US);
           }
         }
       }

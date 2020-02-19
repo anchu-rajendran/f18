@@ -1,4 +1,4 @@
-//===-- lib/semantics/check-allocate.h --------------------------*- C++ -*-===//
+//===-- lib/semantics/check-data.h --------------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -9,13 +9,14 @@
 #ifndef FORTRAN_SEMANTICS_CHECK_DATA_H_
 #define FORTRAN_SEMANTICS_CHECK_DATA_H_
 
-#include "flang/evaluate/fold.h"
+#include "flang/parser/parse-tree.h"
 #include "flang/semantics/semantics.h"
 #include "flang/semantics/tools.h"
+#include "flang/evaluate/fold.h"
 
 namespace Fortran::parser {
-struct DataStmt;
 struct DataStmtRepeat;
+struct DataStmtConstant;
 }
 
 namespace Fortran::semantics {
@@ -25,7 +26,6 @@ public:
     : context_{context}, foldingContext_{context_.foldingContext()} {}
   void Leave(const parser::DataStmtRepeat &);
   void Leave(const parser::DataStmtConstant &);
-  void Leave(const parser::DataStmtObject &);
 
 private:
   SemanticsContext &context_;
