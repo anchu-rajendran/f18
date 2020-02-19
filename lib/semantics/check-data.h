@@ -12,8 +12,6 @@
 #include "flang/evaluate/fold.h"
 #include "flang/semantics/semantics.h"
 #include "flang/semantics/tools.h"
-#include <iostream>
-#include <string>
 
 namespace Fortran::parser {
 struct DataStmt;

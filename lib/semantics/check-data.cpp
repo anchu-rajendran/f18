@@ -18,33 +18,42 @@
 #include "flang/semantics/expression.h"
 #include "flang/semantics/semantics.h"
 #include "flang/semantics/symbol.h"
-#include <set>
-#include <variant>
 
 namespace Fortran::semantics {
 
-void DataChecker::Leave(const parser::DataStmtConstant &) {
-  // C883-C887
+void DataChecker::Leave(const parser::DataStmtConstant &dataConst) {
+  // C884
+  if (auto *structure{
+          std::get_if<parser::StructureConstructor>(&dataConst.u)}) {
+    for (const auto &component :
+        std::get<std::list<parser::ComponentSpec>>(structure->t)) {
+      const parser::Expr &parsedExpr{
+          std::get<parser::ComponentDataSource>(component.t).v.value()};
+      const auto *expr{GetExpr(parsedExpr)};
+      if (!evaluate::IsConstantExpr(*expr)) {  // C884
+        context_.Say(parsedExpr.source,
+            "The Structure Constructor in DATA value should be a constant expression"_err_en_US);
+      }
+    }
+  }
+  // TODO: C886  and C887 for dataConstant
 }
 
 void DataChecker::Leave(const parser::DataStmtObject &) {
   // C874-C881
 }
 
-void DataChecker::Leave(const parser::DataStmtRepeat &dRepeat) {
-  if (auto *repeatVal = std::get_if<
+void DataChecker::Leave(const parser::DataStmtRepeat &dataRepeat) {
+  if (auto *repeatVal{std::get_if<
           parser::Scalar<parser::Integer<parser::ConstantSubobject>>>(
-          &dRepeat.u)) {
-    const parser::Designator &designator = repeatVal->thing.thing.thing.value();
-    auto &mutate{const_cast<parser::Designator &>(designator)};
-    if (auto *dataRef{std::get_if<parser::DataRef>(&mutate.u)}) {
-      evaluate::ExpressionAnalyzer analyzer{context_};
-      if (MaybeExpr checked{analyzer.Analyze(*dataRef)}) {
-        auto expr = evaluate::Fold(foldingContext_, std::move(checked));
-        int iv = 0;
-        if (std::optional<std::int64_t> i64{ToInt64(expr)}) {
-          iv = *i64;
-          if (iv < 0) {  // C882
+          &dataRepeat.u)}) {
+    const parser::Designator &designator{repeatVal->thing.thing.thing.value()};
+    if (auto *dataRef{std::get_if<parser::DataRef>(&designator.u)}) {
+      evaluate::ExpressionAnalyzer exprAnalyzer{context_};
+      if (MaybeExpr checked{exprAnalyzer.Analyze(*dataRef)}) {
+        auto expr{evaluate::Fold(foldingContext_, std::move(checked))};
+        if (auto i64{ToInt64(expr)}) {
+          if (*i64 < 0) {  // C882
             context_.Say(designator.source,
                 "The repeat count for data value should be positive"_err_en_US);
           }
