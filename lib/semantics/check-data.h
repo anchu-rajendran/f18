@@ -1,4 +1,4 @@
-//===-- lib/semantics/check-data.h --------------------------*- C++ -*-===//
+//===-------lib/semantics/check-data.h ------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -13,11 +13,6 @@
 #include "flang/semantics/semantics.h"
 #include "flang/semantics/tools.h"
 #include "flang/evaluate/fold.h"
-
-namespace Fortran::parser {
-struct DataStmtRepeat;
-struct DataStmtConstant;
-}
 
 namespace Fortran::semantics {
 class DataChecker : public virtual BaseChecker {

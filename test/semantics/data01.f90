@@ -1,3 +1,4 @@
+!Test for checking data constraints, C882-C887
 module m1
   type person
     integer :: age

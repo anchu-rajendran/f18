@@ -2900,7 +2900,7 @@ void DeclarationVisitor::Post(const parser::EntityDecl &x) {
     if (ConvertToObjectEntity(symbol)) {
       Initialization(name, *init, false);
     }
-  } else if (attrs.test(Attr::PARAMETER)) { //C882, C883
+  } else if (attrs.test(Attr::PARAMETER)) { // C882, C883
     Say(name, "Missing initialization for parameter '%s'"_err_en_US);
   }
 }
@@ -4337,7 +4337,7 @@ std::optional<DerivedTypeSpec> DeclarationVisitor::ResolveDerivedType(
       DerivedTypeDetails details;
       details.set_isForwardReferenced();
       symbol->set_details(std::move(details));
-    } else { //C883
+    } else { // C883
       Say(name, "Derived type '%s' not found"_err_en_US);
       return std::nullopt;
     }

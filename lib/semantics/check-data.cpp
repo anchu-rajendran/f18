@@ -1,4 +1,4 @@
-//===-- lib/semantics/check-data.cpp ----------------------------------===//
+//===-- lib/semantics/check-data.cpp --------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -17,14 +17,15 @@ void DataChecker::Leave(const parser::DataStmtConstant &dataConst) {
         std::get<std::list<parser::ComponentSpec>>(structure->t)) {
       const parser::Expr &parsedExpr{
           std::get<parser::ComponentDataSource>(component.t).v.value()};
-      const auto *expr{GetExpr(parsedExpr)};
-      if (!evaluate::IsConstantExpr(*expr)) { // C884
-        context_.Say(parsedExpr.source,
-            "Structure constructor in DATA value should be a constant expression"_err_en_US);
+      if (const auto *expr{GetExpr(parsedExpr)}) {
+        if (!evaluate::IsConstantExpr(*expr)) {  // C884
+          context_.Say(parsedExpr.source,
+              "Structure constructor in DATA value should be a constant expression"_err_en_US);
+        }
       }
     }
   }
-  // TODO: C886 and C887 for dataConstant
+  // TODO: C886 and C887 for data-stmt-constant
 }
 
 // TODO: C874-C881
