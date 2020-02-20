@@ -7,21 +7,21 @@ module m1
   integer, parameter::digits(5) = ( /-11,-22,-33,44,55/ )
   integer ::notConstDigits(5) = ( /-11,-22,-33,44,55/ )
   real, parameter::numbers(5) = ( /-11.11,-22.22,-33.33,44.44,55.55/ )
-  integer, parameter :: repeat=-1
+  integer, parameter :: repeat = -1
   integer :: myAge = 2 
   type(person) myName
 end
 
-subroutine check_repeat
+subroutine CheckRepeat
   use m1
   !C882
   !ERROR: Missing initialization for parameter 'uninitialized'
   integer, parameter :: uninitialized
   !C882
-  !ERROR: Repeat count for data value should not be negative
+  !ERROR: Repeat count for data value must not be negative
   DATA myName%age / repeat * 35 /
   !C882
-  !ERROR: Repeat count for data value should not be negative
+  !ERROR: Repeat count for data value must not be negative
   DATA myName%age / digits(1) * 35 /
   !C882
   !ERROR: Must be a constant value
@@ -37,12 +37,12 @@ subroutine check_repeat
   DATA myName%age / digits(myAge) * 35 /
 end
 
-subroutine check_value
+subroutine CheckValue
   use m1
   !C883
   !ERROR: Derived type 'persn' not found
   DATA myname / persn(2, 'Abcd Efgh') /
   !C884
-  !ERROR: Structure constructor in DATA value should be a constant expression
+  !ERROR: Structure constructor in data value must be a constant expression
   DATA myname / person(myAge, 'Abcd Ijkl') /
 end

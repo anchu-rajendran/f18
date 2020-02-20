@@ -20,7 +20,7 @@ void DataChecker::Leave(const parser::DataStmtConstant &dataConst) {
       if (const auto *expr{GetExpr(parsedExpr)}) {
         if (!evaluate::IsConstantExpr(*expr)) {  // C884
           context_.Say(parsedExpr.source,
-              "Structure constructor in DATA value should be a constant expression"_err_en_US);
+              "Structure constructor in data value must be a constant expression"_err_en_US);
         }
       }
     }
@@ -31,18 +31,16 @@ void DataChecker::Leave(const parser::DataStmtConstant &dataConst) {
 // TODO: C874-C881
 
 void DataChecker::Leave(const parser::DataStmtRepeat &dataRepeat) {
-  if (auto *repeatVal{std::get_if<
-          parser::Scalar<parser::Integer<parser::ConstantSubobject>>>(
-          &dataRepeat.u)}) {
-    const parser::Designator &designator{repeatVal->thing.thing.thing.value()};
-    if (auto *dataRef{std::get_if<parser::DataRef>(&designator.u)}) {
+  if (const auto *designator{parser::Unwrap<parser::Designator>(dataRepeat)}) {
+    if (auto *dataRef{std::get_if<parser::DataRef>(&designator->u)}) {
       evaluate::ExpressionAnalyzer exprAnalyzer{context_};
       if (MaybeExpr checked{exprAnalyzer.Analyze(*dataRef)}) {
-        auto expr{evaluate::Fold(foldingContext_, std::move(checked))};
+        auto expr{
+            evaluate::Fold(context_.foldingContext(), std::move(checked))};
         if (auto i64{ToInt64(expr)}) {
           if (*i64 < 0) {  // C882
-            context_.Say(designator.source,
-                "Repeat count for data value should not be negative"_err_en_US);
+            context_.Say(designator->source,
+                "Repeat count for data value must not be negative"_err_en_US);
           }
         }
       }
