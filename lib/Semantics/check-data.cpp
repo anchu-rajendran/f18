@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "check-data.h"
+#include <iostream>
 
 namespace Fortran::semantics {
 
@@ -27,21 +28,21 @@ void DataChecker::checkObjectSubscripts(const parser::SectionSubscript &subscrip
           const auto &parsedExpr{subscriptStart->thing.thing.value()};
             if (IsConstantParsedExpr(parsedExpr)) { // C875
               context_.Say(parsedExpr.source,
-              		"Must be a constant expression"_err_en_US);
+              		"Subscript must be a constant"_err_en_US);
             }
 	}
         if(const auto &subscriptEnd{std::get<1>(triplet.t)}) {
           const auto &parsedExpr{subscriptEnd->thing.thing.value()};
             if (IsConstantParsedExpr(parsedExpr)) { // C875
               context_.Say(parsedExpr.source,
-              		"Must be a constant expression"_err_en_US);
+              		"Subscript must be a constant"_err_en_US);
             }
 	}
         if(const auto &stride{std::get<2>(triplet.t)}) {
           const auto &parsedExpr{stride->thing.thing.value()};
             if (IsConstantParsedExpr(parsedExpr)) { // C875
               context_.Say(parsedExpr.source,
-              		"Must be a constant expression"_err_en_US);
+              		"Subscript must be a constant"_err_en_US);
             }
 	}
       },
@@ -50,7 +51,7 @@ void DataChecker::checkObjectSubscripts(const parser::SectionSubscript &subscrip
         if (const auto *expr{GetExpr(parsedExpr)}) {
           if (!evaluate::IsConstantExpr(*expr)) { // C875
           context_.Say(parsedExpr.source,
-          		"Must be a constant expression"_err_en_US);
+          		"Subscript must be a constant"_err_en_US);
           }
         }
       },
@@ -80,7 +81,11 @@ void DataChecker::Leave(const parser::DataImpliedDo &dataImpliedDo) {
       if (auto *dataRef{std::get_if<parser::DataRef>(&designator->u)}) {
         evaluate::ExpressionAnalyzer exprAnalyzer{context_};
         if (MaybeExpr checked{exprAnalyzer.Analyze(*dataRef)}) {
-          if (ExtractCoarrayRef(checked)) {  // C874
+          if (evaluate::IsConstantExpr(*checked)) { // C878, C879
+              context_.Say(designator->source,
+                "Data Object must be a variable"_err_en_US);
+          }
+	  if (ExtractCoarrayRef(checked)) {  // C874
               context_.Say(designator->source,
                 "Data Implied Do Object must not be a coindexed variable"_err_en_US);
           }
