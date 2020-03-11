@@ -22,9 +22,9 @@ public:
   void Leave(const parser::DataStmtConstant &);
   void Leave(const parser::DataStmtObject &);
   void Leave(const parser::DataImpliedDo &);
-  void checkObjectSubscripts(const parser::SectionSubscript &);
 
 private:
+  void checkObjectSubscripts(const parser::SectionSubscript &);
   SemanticsContext &context_;
 };
 }
