@@ -1,51 +1,68 @@
 !Testing data constraints : C874 - C875, C878 - C881 
 module m
   contains
-    function f(i)
-      integer ::i
-      integer ::result
-      result = i *1024 
-    end
+    !function f(i)
+    !  integer ::i
+    !  integer ::result
+    !  result = i *1024 
+    !end
     subroutine CheckObject 
       type specialNumbers
-        integer :: one
-        integer :: numbers(5)
+        integer one
+        integer numbers(5)
+      end type
+      type large
+        integer elt(10)
+        integer val
+        type(specialNumbers) nums
+        type(specialNumbers) numsArray(5)
       end type
       type(specialNumbers), parameter ::newNums = specialNumbers(1, (/ 1, 2, 3, 4, 5 /))
       type(specialNumbers) nums
+      type(large) largeArray(5)
+      type(large) largeNumber
       real :: a[*]
       real :: b(5)
-      integer ::x
-      real,parameter ::c(5) = (/ 1, 2, 3, 4, 5 /)
-      integer ::d(10, 10)
-      character ::name(12)
-      integer ::ind = 2
+      integer :: x
+      real,parameter :: c(5) = (/ 1, 2, 3, 4, 5 /)
+      integer :: d(10, 10)
+      character :: name(12)
+      integer :: ind = 2
       !C874
-      !ERROR: Data Implied Do Object must not be a coindexed variable
+      !ERROR: Data object must not be a coindexed variable
+      DATA a[1] / 1 /
+      !C874
+      !ERROR: Data implied do object must not be a coindexed variable
       DATA(a[i], i = 1, 5) / 5 * 1 /
       !C875
-      !ERROR : Data Object variable must be a designator
+      !ERROR: Data object variable must be a designator
       DATA f(1) / 1 / 
       !C875
-      !ERROR : Subscript must be a constant
+      !ERROR: Subscript must be a constant
       DATA b(ind) / 1 /
       !C875
-      !ERROR : Subscript must be a constant
+      !ERROR: Subscript must be a constant
       DATA name( : ind) / 'Ancd' /
       !C875
-      !ERROR : Subscript must be a constant
+      !ERROR: Subscript must be a constant
       DATA name(ind:) / 'Ancd' /
       !C878
-      !ERROR : Data Object must be a variable
+      !ERROR: Data object must be a variable
       DATA(c(i), i = 1, 5) / 5 * 1 /
       !C879
-      !ERROR : Data Object must be a variable
+      !ERROR: Data object must be a variable
       DATA(newNums % numbers(i), i = 1, 5) / 5 * 1 /
       !C880
-      !ERROR : Data Object in implied-do must be subscripted 
+      !ERROR: Data implied do object must be subscripted
       DATA(nums % one, i = 1, 5) / 5 * 1 /
+      !C880
+      !OK : Correct use
+      DATA(largeArray(j)%nums%one, j = 1, 10) / 100 * 1 /
+      !C880
+      !OK : Correct use
+      DATA(largeNumber%numsArray(j)%one, j = 1, 10) / 100 * 1 /
       !C881
-      !ERROR : Subscript must be a constant
+      !ERROR: Subscript must be a constant
       DATA(b(x), i = 1, 5) / 5 * 1 /
       !C881 
       !OK : Correct use
@@ -53,5 +70,8 @@ module m
       !C881
       !OK : Correct use
       DATA((d(i, j), i = 1, 10), j = 1, 10) / 100 * 1 /
+      !C881
+      !OK : Correct use
+      DATA(d(i, 1), i = 1, 10) / 100 * 1 /
     end 
   end

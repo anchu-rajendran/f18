@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "check-data.h"
+#include <iostream>
 
 namespace Fortran::semantics {
 
@@ -56,6 +57,34 @@ void DataChecker::checkObjectSubscripts(
       subscript.u);
 }
 
+// Returns false if  DataRef has no subscript
+bool DataChecker::CheckAllRefsInDataRef(
+    const parser::DataRef &dataRef, const parser::CharBlock &source) {
+  return std::visit(
+      common::visitors{
+          [&](const parser::Name &) { return false; },
+          [&](const common::Indirection<parser::StructureComponent>
+                  &structureComp) {
+            return CheckAllRefsInDataRef(structureComp.value().base, source);
+          },
+          [&](const common::Indirection<parser::ArrayElement> &arrayElem) {
+            for (auto &subscript : arrayElem.value().subscripts) {
+              checkObjectSubscripts(subscript);
+            }
+            CheckAllRefsInDataRef(arrayElem.value().base, source);
+            return true;
+          },
+          [&](const common::Indirection<parser::CoindexedNamedObject>
+                  &coindexedObj) {  // C874
+            context_.Say(source,
+                "Data implied do object must not be a coindexed variable"_err_en_US);
+            CheckAllRefsInDataRef(coindexedObj.value().base, source);
+            return true;
+          },
+      },
+      dataRef.u);
+}
+
 void DataChecker::Leave(const parser::DataStmtConstant &dataConst) {
   if (auto *structure{
           std::get_if<parser::StructureConstructor>(&dataConst.u)}) {
@@ -80,13 +109,15 @@ void DataChecker::Leave(const parser::DataImpliedDo &dataImpliedDo) {
     if (const auto *designator{parser::Unwrap<parser::Designator>(object)}) {
       if (auto *dataRef{std::get_if<parser::DataRef>(&designator->u)}) {
         evaluate::ExpressionAnalyzer exprAnalyzer{context_};
-        bool isCoarrayRef{false};
         if (MaybeExpr checked{exprAnalyzer.Analyze(*dataRef)}) {
-          if (ExtractCoarrayRef(checked)) {  // C874
-            isCoarrayRef = true;
-            context_.Say(designator->source,
-                "Data Implied Do Object must not be a coindexed variable"_err_en_US);
+          if (evaluate::IsConstantExpr(*checked)) {  // C879
+            context_.Say(
+                designator->source, "Data object must be a variable"_err_en_US);
           }
+        }
+        if (!CheckAllRefsInDataRef(*dataRef, designator->source)) {  // C880
+          context_.Say(designator->source,
+              "Data implied do object must be subscripted"_err_en_US);
         }
         if (auto *arrayElem{
                 std::get_if<common::Indirection<parser::ArrayElement>>(
@@ -99,23 +130,9 @@ void DataChecker::Leave(const parser::DataImpliedDo &dataImpliedDo) {
             if (MaybeExpr checked{exprAnalyzer.Analyze(structBase)}) {
               if (evaluate::IsConstantExpr(*checked)) {  // C879
                 context_.Say(designator->source,
-                    "Data Object must be a variable"_err_en_US);
+                    "Data object must be a variable"_err_en_US);
               }
             }
-          }
-          if (MaybeExpr checked{exprAnalyzer.Analyze(arrayBase)}) {
-            if (evaluate::IsConstantExpr(*checked)) {  // C878
-              context_.Say(designator->source,
-                  "Data Object must be a variable"_err_en_US);
-            }
-          }
-          for (auto &subscript : arrayElem->value().subscripts) {
-            checkObjectSubscripts(subscript);
-          }
-        } else {  // C880
-          if (!isCoarrayRef) {
-            context_.Say(designator->source,
-                "Data Object in implied-do must be subscripted"_err_en_US);
           }
         }
       }
@@ -132,7 +149,7 @@ void DataChecker::Leave(const parser::DataStmtObject &dataObject) {
         if (MaybeExpr checked{exprAnalyzer.Analyze(*dataRef)}) {
           if (ExtractCoarrayRef(checked)) {  // C874
             context_.Say(designator->source,
-                "Data Object must not be a coindexed variable"_err_en_US);
+                "Data object must not be a coindexed variable"_err_en_US);
           }
         }
         if (auto *arrayElem{
@@ -144,7 +161,7 @@ void DataChecker::Leave(const parser::DataStmtObject &dataObject) {
         }
       }
     } else {  // C875
-      context_.Say("Data Object variable must be a designator"_err_en_US);
+      context_.Say("Data object variable must be a designator"_err_en_US);
     }
   }
 }

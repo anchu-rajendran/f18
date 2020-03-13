@@ -24,8 +24,10 @@ public:
   void Leave(const parser::DataImpliedDo &);
 
 private:
-  void checkObjectSubscripts(const parser::SectionSubscript &);
   SemanticsContext &context_;
+  void checkObjectSubscripts(const parser::SectionSubscript &);
+  bool CheckAllRefsInDataRef(
+      const parser::DataRef &, const parser::CharBlock &);
 };
 }
 #endif  // FORTRAN_SEMANTICS_CHECK_DATA_H_
