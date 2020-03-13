@@ -7,63 +7,53 @@
 //===----------------------------------------------------------------------===//
 
 #include "check-data.h"
-#include <iostream>
 
 namespace Fortran::semantics {
 
-static bool IsConstantParsedExpr(const parser::Expr &parsedExpr) {
-  if (const auto *expr{GetExpr(parsedExpr)}) {
-    if (evaluate::IsConstantExpr(*expr)) {
-      return true;
-    }
-  }
-  return false;
-}
-// as context is required abstract it to a helper class
-//static bool IsConstantParsedExpr(const parser::Expr &parsedExpr) {
-//  if (const auto *expr{GetExpr(parsedExpr)}) {
-//    if (evaluate::IsConstantExpr(*expr)) {
-//      return true;
-//    }
-//  }
-//  return false;
-//}
-
-void DataChecker::checkObjectSubscripts(const parser::SectionSubscript &subscript){
-    std::visit(
-    common::visitors{
-      [&](const parser::SubscriptTriplet &triplet) {
-        if(const auto &subscriptStart{std::get<0>(triplet.t)}) {
-          const auto &parsedExpr{subscriptStart->thing.thing.value()};
-            if (!IsConstantParsedExpr(parsedExpr)) { // C875
-              context_.Say(parsedExpr.source,
-              		"Subscript must be a constant"_err_en_US);
+void DataChecker::checkObjectSubscripts(
+    const parser::SectionSubscript &subscript) {
+  std::visit(
+      common::visitors{
+          [&](const parser::SubscriptTriplet &triplet) {
+            if (const auto &subscriptStart{std::get<0>(triplet.t)}) {
+              const auto &parsedExpr{subscriptStart->thing.thing.value()};
+              if (const auto *expr{GetExpr(parsedExpr)}) {
+                if (!evaluate::IsConstantExpr(*expr)) {  // C875,C881
+                  context_.Say(parsedExpr.source,
+                      "Subscript must be a constant"_err_en_US);
+                }
+              }
             }
-	}
-        if(const auto &subscriptEnd{std::get<1>(triplet.t)}) {
-          const auto &parsedExpr{subscriptEnd->thing.thing.value()};
-            if (!IsConstantParsedExpr(parsedExpr)) { // C875
-              context_.Say(parsedExpr.source,
-              		"Subscript must be a constant"_err_en_US);
+            if (const auto &subscriptEnd{std::get<1>(triplet.t)}) {
+              const auto &parsedExpr{subscriptEnd->thing.thing.value()};
+              if (const auto *expr{GetExpr(parsedExpr)}) {
+                if (!evaluate::IsConstantExpr(*expr)) {  // C875, C881
+                  context_.Say(parsedExpr.source,
+                      "Subscript must be a constant"_err_en_US);
+                }
+              }
             }
-	}
-        if(const auto &stride{std::get<2>(triplet.t)}) {
-          const auto &parsedExpr{stride->thing.thing.value()};
-            if (!IsConstantParsedExpr(parsedExpr)) { // C875
-              context_.Say(parsedExpr.source,
-              		"Subscript must be a constant"_err_en_US);
+            if (const auto &stride{std::get<2>(triplet.t)}) {
+              const auto &parsedExpr{stride->thing.thing.value()};
+              if (const auto *expr{GetExpr(parsedExpr)}) {
+                if (!evaluate::IsConstantExpr(*expr)) {  // C875, C881
+                  context_.Say(parsedExpr.source,
+                      "Subscript must be a constant"_err_en_US);
+                }
+              }
             }
-	}
+          },
+          [&](const parser::IntExpr &y) {
+            const parser::Expr &parsedExpr{y.thing.value()};
+            if (const auto *expr{GetExpr(parsedExpr)}) {
+              if (!evaluate::IsConstantExpr(*expr)) {  // C875, C881
+                context_.Say(parsedExpr.source,
+                    "Subscript must be a constant"_err_en_US);
+              }
+            }
+          },
       },
-      [&](const parser::IntExpr &y) {
-        const parser::Expr &parsedExpr{y.thing.value()};
-	if (!IsConstantParsedExpr(parsedExpr)) { // C875
-		context_.Say(parsedExpr.source,
-				"Subscript must be a constant"_err_en_US);
-	}
-      },
-    },
-    subscript.u);
+      subscript.u);
 }
 
 void DataChecker::Leave(const parser::DataStmtConstant &dataConst) {
@@ -73,74 +63,87 @@ void DataChecker::Leave(const parser::DataStmtConstant &dataConst) {
         std::get<std::list<parser::ComponentSpec>>(structure->t)) {
       const parser::Expr &parsedExpr{
           std::get<parser::ComponentDataSource>(component.t).v.value()};
-        if (!IsConstantParsedExpr(parsedExpr)) {
+      if (const auto *expr{GetExpr(parsedExpr)}) {
+        if (!evaluate::IsConstantExpr(*expr)) {  // C884
           context_.Say(parsedExpr.source,
-            "Structure constructor in data value must be a constant expression"_err_en_US);
+              "Structure constructor in data value must be a constant expression"_err_en_US);
         }
+      }
     }
   }
 }
 
-// TODO: C874-C881
+// TODO: C876, C877
 void DataChecker::Leave(const parser::DataImpliedDo &dataImpliedDo) {
-  for(const auto &object : std::get<std::list<parser::DataIDoObject>>(dataImpliedDo.t)) {
+  for (const auto &object :
+      std::get<std::list<parser::DataIDoObject>>(dataImpliedDo.t)) {
     if (const auto *designator{parser::Unwrap<parser::Designator>(object)}) {
       if (auto *dataRef{std::get_if<parser::DataRef>(&designator->u)}) {
         evaluate::ExpressionAnalyzer exprAnalyzer{context_};
-	if (MaybeExpr checked{exprAnalyzer.Analyze(*dataRef)}) {
-	  if (ExtractCoarrayRef(checked)) {  // C874
-              context_.Say(designator->source,
+        bool isCoarrayRef{false};
+        if (MaybeExpr checked{exprAnalyzer.Analyze(*dataRef)}) {
+          if (ExtractCoarrayRef(checked)) {  // C874
+            isCoarrayRef = true;
+            context_.Say(designator->source,
                 "Data Implied Do Object must not be a coindexed variable"_err_en_US);
           }
-	  return;
         }
-        if(auto *arrayElem{std::get_if<common::Indirection<parser::ArrayElement>>(&dataRef->u)}) {
-           auto &arrayBase{arrayElem->value().base};
-	   if(auto *structureComp{std::get_if<common::Indirection<parser::StructureComponent>>(&arrayBase.u)}) {	
-	      auto &structBase{structureComp->value().base};	   
-              if (MaybeExpr checked{exprAnalyzer.Analyze(structBase)}) {
-                if (evaluate::IsConstantExpr(*checked)) { // C879
-                   context_.Say(designator->source,
-               	 "Data Object must be a variable"_err_en_US);
-                }
+        if (auto *arrayElem{
+                std::get_if<common::Indirection<parser::ArrayElement>>(
+                    &dataRef->u)}) {
+          auto &arrayBase{arrayElem->value().base};
+          if (auto *structureComp{
+                  std::get_if<common::Indirection<parser::StructureComponent>>(
+                      &arrayBase.u)}) {
+            auto &structBase{structureComp->value().base};
+            if (MaybeExpr checked{exprAnalyzer.Analyze(structBase)}) {
+              if (evaluate::IsConstantExpr(*checked)) {  // C879
+                context_.Say(designator->source,
+                    "Data Object must be a variable"_err_en_US);
               }
-	   }
-           if (MaybeExpr checked{exprAnalyzer.Analyze(arrayBase)}) {
-             if (evaluate::IsConstantExpr(*checked)) { // C878
-                context_.Say(designator->source,
-            	 "Data Object must be a variable"_err_en_US);
-             }
-           }
-	   for(auto &subscript: arrayElem->value().subscripts) {
-             checkObjectSubscripts(subscript); 
-	   }
-        } else { // C880
-                context_.Say(designator->source,
-            	 "Data Object in Implied Do must be subscripted"_err_en_US);
-	}
+            }
+          }
+          if (MaybeExpr checked{exprAnalyzer.Analyze(arrayBase)}) {
+            if (evaluate::IsConstantExpr(*checked)) {  // C878
+              context_.Say(designator->source,
+                  "Data Object must be a variable"_err_en_US);
+            }
+          }
+          for (auto &subscript : arrayElem->value().subscripts) {
+            checkObjectSubscripts(subscript);
+          }
+        } else {  // C880
+          if (!isCoarrayRef) {
+            context_.Say(designator->source,
+                "Data Object in implied-do must be subscripted"_err_en_US);
+          }
+        }
       }
     }
   }
 }
 
 void DataChecker::Leave(const parser::DataStmtObject &dataObject) {
-  if(std::get_if<common::Indirection<parser::Variable>>(&dataObject.u)) { 
-    if (const auto *designator{parser::Unwrap<parser::Designator>(dataObject)}) {
+  if (std::get_if<common::Indirection<parser::Variable>>(&dataObject.u)) {
+    if (const auto *designator{
+            parser::Unwrap<parser::Designator>(dataObject)}) {
       if (auto *dataRef{std::get_if<parser::DataRef>(&designator->u)}) {
         evaluate::ExpressionAnalyzer exprAnalyzer{context_};
         if (MaybeExpr checked{exprAnalyzer.Analyze(*dataRef)}) {
-          if (ExtractCoarrayRef(checked)) { // C874
-              context_.Say(designator->source,
+          if (ExtractCoarrayRef(checked)) {  // C874
+            context_.Say(designator->source,
                 "Data Object must not be a coindexed variable"_err_en_US);
           }
         }
-	if(auto *arrayElem{std::get_if<common::Indirection<parser::ArrayElement>>(&dataRef->u)}) {
-	  for(auto &subscript: arrayElem->value().subscripts) {
-            checkObjectSubscripts(subscript); 
-	  }
-	}
+        if (auto *arrayElem{
+                std::get_if<common::Indirection<parser::ArrayElement>>(
+                    &dataRef->u)}) {
+          for (auto &subscript : arrayElem->value().subscripts) {
+            checkObjectSubscripts(subscript);
+          }
+        }
       }
-    } else { // C875
+    } else {  // C875
       context_.Say("Data Object variable must be a designator"_err_en_US);
     }
   }
