@@ -25,8 +25,8 @@ public:
 
 private:
   SemanticsContext &context_;
-  void checkObjectSubscripts(const parser::SectionSubscript &);
-  bool CheckAllRefsInDataRef(
+  void CheckSubscript(const parser::SectionSubscript &);
+  bool CheckAllSubscriptsInDataRef(
       const parser::DataRef &, const parser::CharBlock &);
 };
 }

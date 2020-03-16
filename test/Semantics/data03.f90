@@ -17,7 +17,11 @@ module m
         type(specialNumbers) nums
         type(specialNumbers) numsArray(5)
       end type
-      type(specialNumbers), parameter ::newNums = specialNumbers(1, (/ 1, 2, 3, 4, 5 /))
+      type(specialNumbers), parameter ::newNums = &
+              specialNumbers(1, (/ 1, 2, 3, 4, 5 /))
+      type(specialNumbers), parameter ::newNumsArray(2) = &
+              (/ SpecialNumbers(1, (/ 1, 2, 3, 4, 5 /)), &
+              SpecialNumbers(1, (/ 1, 2, 3,4, 5 /)) /)
       type(specialNumbers) nums
       type(large) largeArray(5)
       type(large) largeNumber
@@ -32,7 +36,7 @@ module m
       !ERROR: Data object must not be a coindexed variable
       DATA a[1] / 1 /
       !C874
-      !ERROR: Data implied do object must not be a coindexed variable
+      !ERROR: Data object must not be a coindexed variable
       DATA(a[i], i = 1, 5) / 5 * 1 /
       !C875
       !ERROR: Data object variable must be a designator
@@ -51,7 +55,8 @@ module m
       DATA(c(i), i = 1, 5) / 5 * 1 /
       !C879
       !ERROR: Data object must be a variable
-      DATA(newNums % numbers(i), i = 1, 5) / 5 * 1 /
+      DATA(newNumsArray(i), i = 1, 2) &
+              / specialNumbers(1, 2 * (/ 1, 2, 3, 4, 5 /)) /
       !C880
       !ERROR: Data implied do object must be subscripted
       DATA(nums % one, i = 1, 5) / 5 * 1 /

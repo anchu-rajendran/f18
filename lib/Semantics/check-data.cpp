@@ -1,18 +1,16 @@
 //===-- lib/Semantics/check-data.cpp --------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
+// sEE https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "check-data.h"
-#include <iostream>
 
 namespace Fortran::semantics {
 
-void DataChecker::checkObjectSubscripts(
-    const parser::SectionSubscript &subscript) {
+void DataChecker::CheckSubscript(const parser::SectionSubscript &subscript) {
   std::visit(
       common::visitors{
           [&](const parser::SubscriptTriplet &triplet) {
@@ -58,27 +56,28 @@ void DataChecker::checkObjectSubscripts(
 }
 
 // Returns false if  DataRef has no subscript
-bool DataChecker::CheckAllRefsInDataRef(
+bool DataChecker::CheckAllSubscriptsInDataRef(
     const parser::DataRef &dataRef, const parser::CharBlock &source) {
   return std::visit(
       common::visitors{
           [&](const parser::Name &) { return false; },
           [&](const common::Indirection<parser::StructureComponent>
                   &structureComp) {
-            return CheckAllRefsInDataRef(structureComp.value().base, source);
+            return CheckAllSubscriptsInDataRef(
+                structureComp.value().base, source);
           },
           [&](const common::Indirection<parser::ArrayElement> &arrayElem) {
             for (auto &subscript : arrayElem.value().subscripts) {
-              checkObjectSubscripts(subscript);
+              CheckSubscript(subscript);
             }
-            CheckAllRefsInDataRef(arrayElem.value().base, source);
+            CheckAllSubscriptsInDataRef(arrayElem.value().base, source);
             return true;
           },
           [&](const common::Indirection<parser::CoindexedNamedObject>
                   &coindexedObj) {  // C874
             context_.Say(source,
-                "Data implied do object must not be a coindexed variable"_err_en_US);
-            CheckAllRefsInDataRef(coindexedObj.value().base, source);
+                "Data object must not be a coindexed variable"_err_en_US);
+            CheckAllSubscriptsInDataRef(coindexedObj.value().base, source);
             return true;
           },
       },
@@ -110,30 +109,15 @@ void DataChecker::Leave(const parser::DataImpliedDo &dataImpliedDo) {
       if (auto *dataRef{std::get_if<parser::DataRef>(&designator->u)}) {
         evaluate::ExpressionAnalyzer exprAnalyzer{context_};
         if (MaybeExpr checked{exprAnalyzer.Analyze(*dataRef)}) {
-          if (evaluate::IsConstantExpr(*checked)) {  // C879
+          if (evaluate::IsConstantExpr(*checked)) {  // C878, C879
             context_.Say(
                 designator->source, "Data object must be a variable"_err_en_US);
           }
         }
-        if (!CheckAllRefsInDataRef(*dataRef, designator->source)) {  // C880
+        if (!CheckAllSubscriptsInDataRef(
+                *dataRef, designator->source)) {  // C880
           context_.Say(designator->source,
               "Data implied do object must be subscripted"_err_en_US);
-        }
-        if (auto *arrayElem{
-                std::get_if<common::Indirection<parser::ArrayElement>>(
-                    &dataRef->u)}) {
-          auto &arrayBase{arrayElem->value().base};
-          if (auto *structureComp{
-                  std::get_if<common::Indirection<parser::StructureComponent>>(
-                      &arrayBase.u)}) {
-            auto &structBase{structureComp->value().base};
-            if (MaybeExpr checked{exprAnalyzer.Analyze(structBase)}) {
-              if (evaluate::IsConstantExpr(*checked)) {  // C879
-                context_.Say(designator->source,
-                    "Data object must be a variable"_err_en_US);
-              }
-            }
-          }
         }
       }
     }
@@ -145,20 +129,7 @@ void DataChecker::Leave(const parser::DataStmtObject &dataObject) {
     if (const auto *designator{
             parser::Unwrap<parser::Designator>(dataObject)}) {
       if (auto *dataRef{std::get_if<parser::DataRef>(&designator->u)}) {
-        evaluate::ExpressionAnalyzer exprAnalyzer{context_};
-        if (MaybeExpr checked{exprAnalyzer.Analyze(*dataRef)}) {
-          if (ExtractCoarrayRef(checked)) {  // C874
-            context_.Say(designator->source,
-                "Data object must not be a coindexed variable"_err_en_US);
-          }
-        }
-        if (auto *arrayElem{
-                std::get_if<common::Indirection<parser::ArrayElement>>(
-                    &dataRef->u)}) {
-          for (auto &subscript : arrayElem->value().subscripts) {
-            checkObjectSubscripts(subscript);
-          }
-        }
+        CheckAllSubscriptsInDataRef(*dataRef, designator->source);
       }
     } else {  // C875
       context_.Say("Data object variable must be a designator"_err_en_US);
