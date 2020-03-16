@@ -1,11 +1,11 @@
 !Testing data constraints : C874 - C875, C878 - C881 
 module m
   contains
-    !function f(i)
-    !  integer ::i
-    !  integer ::result
-    !  result = i *1024 
-    !end
+    function f(i)
+      integer ::i
+      integer ::result
+      result = i *1024 
+    end
     subroutine CheckObject 
       type specialNumbers
         integer one
@@ -51,32 +51,32 @@ module m
       !ERROR: Subscript must be a constant
       DATA name(ind:) / 'Ancd' /
       !C878
-      !ERROR: Data object must be a variable
+      !ERROR: Data implied do object must be a variable
       DATA(c(i), i = 1, 5) / 5 * 1 /
       !C879
-      !ERROR: Data object must be a variable
+      !ERROR: Data implied do object must be a variable
       DATA(newNumsArray(i), i = 1, 2) &
               / specialNumbers(1, 2 * (/ 1, 2, 3, 4, 5 /)) /
       !C880
       !ERROR: Data implied do object must be subscripted
       DATA(nums % one, i = 1, 5) / 5 * 1 /
       !C880
-      !OK : Correct use
-      DATA(largeArray(j)%nums%one, j = 1, 10) / 100 * 1 /
+      !OK: Correct use
+      DATA(largeArray(j) % nums % one, j = 1, 10) / 100 * 1 /
       !C880
-      !OK : Correct use
-      DATA(largeNumber%numsArray(j)%one, j = 1, 10) / 100 * 1 /
+      !OK: Correct use
+      DATA(largeNumber % numsArray(j) % one, j = 1, 10) / 100 * 1 /
       !C881
       !ERROR: Subscript must be a constant
       DATA(b(x), i = 1, 5) / 5 * 1 /
       !C881 
-      !OK : Correct use
+      !OK: Correct use
       DATA(nums % numbers(i), i = 1, 5) / 5 * 1 /
       !C881
-      !OK : Correct use
+      !OK: Correct use
       DATA((d(i, j), i = 1, 10), j = 1, 10) / 100 * 1 /
       !C881
-      !OK : Correct use
+      !OK: Correct use
       DATA(d(i, 1), i = 1, 10) / 100 * 1 /
     end 
   end

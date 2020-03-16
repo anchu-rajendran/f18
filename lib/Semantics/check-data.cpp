@@ -57,7 +57,7 @@ void DataChecker::CheckSubscript(const parser::SectionSubscript &subscript) {
 
 // Returns false if  DataRef has no subscript
 bool DataChecker::CheckAllSubscriptsInDataRef(
-    const parser::DataRef &dataRef, const parser::CharBlock &source) {
+    const parser::DataRef &dataRef, parser::CharBlock source) {
   return std::visit(
       common::visitors{
           [&](const parser::Name &) { return false; },
@@ -111,7 +111,7 @@ void DataChecker::Leave(const parser::DataImpliedDo &dataImpliedDo) {
         if (MaybeExpr checked{exprAnalyzer.Analyze(*dataRef)}) {
           if (evaluate::IsConstantExpr(*checked)) {  // C878, C879
             context_.Say(
-                designator->source, "Data object must be a variable"_err_en_US);
+                designator->source, "Data implied do object must be a variable"_err_en_US);
           }
         }
         if (!CheckAllSubscriptsInDataRef(
