@@ -208,7 +208,6 @@ set(ERROR_TESTS
   critical03.f90
   block-data01.f90
   data01.f90
-  data03.f90
 )
 
 # These test files have expected symbols in the source
