@@ -53,7 +53,7 @@ module m
       !C878
       !ERROR: Data implied do object must be a variable
       DATA(c(i), i = 1, 5) / 5 * 1 /
-      !C879
+      !C878
       !ERROR: Data implied do object must be a variable
       DATA(newNumsArray(i), i = 1, 2) &
               / specialNumbers(1, 2 * (/ 1, 2, 3, 4, 5 /)) /

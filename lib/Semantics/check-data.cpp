@@ -10,46 +10,34 @@
 
 namespace Fortran::semantics {
 
+void DataChecker::CheckIfConstantExpr(const parser::Expr &parsedExpr) {
+  if (const auto *expr{GetExpr(parsedExpr)}) {
+    if (!evaluate::IsConstantExpr(*expr)) {  // C875,C881
+      context_.Say(parsedExpr.source, "Subscript must be a constant"_err_en_US);
+    }
+  }
+}
+
 void DataChecker::CheckSubscript(const parser::SectionSubscript &subscript) {
   std::visit(
       common::visitors{
           [&](const parser::SubscriptTriplet &triplet) {
             if (const auto &subscriptStart{std::get<0>(triplet.t)}) {
               const auto &parsedExpr{subscriptStart->thing.thing.value()};
-              if (const auto *expr{GetExpr(parsedExpr)}) {
-                if (!evaluate::IsConstantExpr(*expr)) {  // C875,C881
-                  context_.Say(parsedExpr.source,
-                      "Subscript must be a constant"_err_en_US);
-                }
-              }
+              CheckIfConstantExpr(parsedExpr);
             }
             if (const auto &subscriptEnd{std::get<1>(triplet.t)}) {
               const auto &parsedExpr{subscriptEnd->thing.thing.value()};
-              if (const auto *expr{GetExpr(parsedExpr)}) {
-                if (!evaluate::IsConstantExpr(*expr)) {  // C875, C881
-                  context_.Say(parsedExpr.source,
-                      "Subscript must be a constant"_err_en_US);
-                }
-              }
+              CheckIfConstantExpr(parsedExpr);
             }
             if (const auto &stride{std::get<2>(triplet.t)}) {
               const auto &parsedExpr{stride->thing.thing.value()};
-              if (const auto *expr{GetExpr(parsedExpr)}) {
-                if (!evaluate::IsConstantExpr(*expr)) {  // C875, C881
-                  context_.Say(parsedExpr.source,
-                      "Subscript must be a constant"_err_en_US);
-                }
-              }
+              CheckIfConstantExpr(parsedExpr);
             }
           },
           [&](const parser::IntExpr &y) {
             const parser::Expr &parsedExpr{y.thing.value()};
-            if (const auto *expr{GetExpr(parsedExpr)}) {
-              if (!evaluate::IsConstantExpr(*expr)) {  // C875, C881
-                context_.Say(parsedExpr.source,
-                    "Subscript must be a constant"_err_en_US);
-              }
-            }
+            CheckIfConstantExpr(parsedExpr);
           },
       },
       subscript.u);
@@ -101,7 +89,7 @@ void DataChecker::Leave(const parser::DataStmtConstant &dataConst) {
   }
 }
 
-// TODO: C876, C877
+// TODO: C876, C877, C879
 void DataChecker::Leave(const parser::DataImpliedDo &dataImpliedDo) {
   for (const auto &object :
       std::get<std::list<parser::DataIDoObject>>(dataImpliedDo.t)) {
@@ -109,9 +97,9 @@ void DataChecker::Leave(const parser::DataImpliedDo &dataImpliedDo) {
       if (auto *dataRef{std::get_if<parser::DataRef>(&designator->u)}) {
         evaluate::ExpressionAnalyzer exprAnalyzer{context_};
         if (MaybeExpr checked{exprAnalyzer.Analyze(*dataRef)}) {
-          if (evaluate::IsConstantExpr(*checked)) {  // C878, C879
-            context_.Say(
-                designator->source, "Data implied do object must be a variable"_err_en_US);
+          if (evaluate::IsConstantExpr(*checked)) {  // C878
+            context_.Say(designator->source,
+                "Data implied do object must be a variable"_err_en_US);
           }
         }
         if (!CheckAllSubscriptsInDataRef(

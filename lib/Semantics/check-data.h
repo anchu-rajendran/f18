@@ -25,6 +25,7 @@ public:
 
 private:
   SemanticsContext &context_;
+  void CheckIfConstantExpr(const parser::Expr &);
   void CheckSubscript(const parser::SectionSubscript &);
   bool CheckAllSubscriptsInDataRef(
       const parser::DataRef &, parser::CharBlock);
